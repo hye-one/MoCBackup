@@ -1,0 +1,106 @@
+% Initialize struct for plies
+plies = struct('t',     [], ...         % Ply thickness
+               'phi',   [], ...         % Ply angle
+               'Q',     [], ...         % Global stiffness matrix
+               'Teps',  [], ...         % Strain transformation matrix from global to local for ply
+               'eps',   zeros(3,2));    % Local strains, first column: lower edge; second column: upper edge
+
+
+n_plies = 3;
+
+% Assign angle and thickness to plies
+plies(1).phi = 90;
+plies(2).phi = 30;
+plies(3).phi = 0;
+[plies.t] = deal(0.125);                % use [structname.field] = deal(...)] to assign value to multiple elements
+
+Load = [30; 0; 20 ; 0; 0 0;];
+kappa = 1;
+% Task 1:  Set up the local stiffness matrix
+E1 = 140000; %140,000GPa
+E2 = 12000; %12,000GPa
+G12 = 5800; %5800GPa
+v12 = 0.26; 
+
+Q11 = E1/(1-v12.^2*E2/E1);
+%%Q22 = E2/(1-v12.^2*E2/E1);
+Q22 = Q11.*(E2/E1);
+Q12 = v12.*Q22;
+Q21 = Q12;
+Q66 = G12;
+
+Q_loc = [Q11 Q12 0;
+         Q21 Q22 0;
+         0   0   Q66];
+
+% Task 2: Compute global stiffness matrices
+alpha = 0;
+
+% for i = 1: n_plies
+%     alpha = plies(i).phi;
+% 
+%     plies.Teps(i) = [cos(alpha).^2 sin(alpha).^2 sin(alpha)*cos(alpha);
+%         sin(alpha).^2 cos(alpha).^2 -sin(alpha)*cos(alpha);
+%         -2*sin(alpha)*cos(alpha) 2*sin(alpha)*cos(alpha) cos(alpha).^2 - sin(alpha).^2];
+% 
+% 
+%     plies.Q(i) = T.' .*Q_loc.*T;
+% end
+
+
+for i = 1: n_plies
+    plies(i).Teps = strainTransformationMatrix(plies(i).phi);
+    plies(i).Q = plies(i).Teps' * Q_loc * plies(i).Teps;
+end
+% Task 3: Compute the ABD matrix
+A = zeros(3,3);
+B = zeros(3,3);
+D = zeros(3,3);
+for i = 1: n_plies
+tges = sum([plies.t]);                  % use [structname.field] to access field for all rows in struct as array
+zk= plies(i).t/2.*[-3;-1;1];
+zk1 = plies(i).t/2*[-1;1;3];
+z_mean = (zk+zk1)/2;
+% z = linspace(-tges/n_plies, tges/n_plies, n_plies);
+% z_mean = (z(1:end-1) + z(2:end)) / 2;
+
+%%z+1 = [-2.*plies(i).t;-plies(i).t;plies(i).t];
+A = A + plies(i).Q*plies(i).t;
+B = B + plies(i).Q.*plies(i).t.*z_mean(i);
+D = D + plies(i).Q.*plies(i).t*(plies(i).t^2/12+z_mean(i).^2);
+    % A = A + plies(i).Q * (z(i+1) - z(i));
+    % B = B + 0.5 * plies(i).Q * (z(i+1)^2 - z(i)^2);
+    % D = D + (1/3) * plies(i).Q * (z(i+1)^3 - z(i)^3);
+end
+ABD = [A B; B D];
+
+% Task 4: Solve the system
+sol = ABD'*Load;
+for i = 1: n_plies
+    plies(i).eps(1) = sol(i);
+    plies(i).eps(2) = sol(i);
+end
+% Task 5: Determine strains in global coordinates
+eps = [];
+
+% Task 6: Compute local strains
+for i = 1: n_plies
+    plies(i).eps(i,1) = e0 + z(i)   * kappa;
+    plies(i).eps(i,2) = e0 + z(i+1) * kappa;
+end
+% Function for transformation matrix
+function Teps = strainTransformationMatrix(phi)
+    % Compute the transformation matrix for strain from a given angle in degree
+    % INPUT
+    %   phi (scalar)        Angle in degree
+    % OUTPUT
+    %   Teps (3x3 matrix)   Transformation matrix for strain from global to local strains
+    Teps = zeros(3,3);
+    %%Teps = fetchData(3,3);
+    Teps = [cos(phi).^2 sin(phi).^2 sin(phi)*cos(phi);
+            sin(phi).^2 cos(phi).^2 -sin(phi)*cos(phi);
+            -2*sin(phi)*cos(phi) 2*sin(phi)*cos(phi) cos(phi).^2 - sin(phi).^2];
+
+    
+end
+ 
