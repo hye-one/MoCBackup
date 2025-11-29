@@ -14,7 +14,7 @@ plies(2).phi = 30;
 plies(3).phi = 0;
 [plies.t] = deal(0.125);                % use [structname.field] = deal(...)] to assign value to multiple elements
 
-Load = [30; 0; 20 ; 0; 0 0;];
+Load = [20; 0; 0 ; 15; 0; 0;];
 kappa = 1;
 % Task 1:  Set up the local stiffness matrix
 E1 = 140000; %140,000GPa
@@ -22,10 +22,9 @@ E2 = 12000; %12,000GPa
 G12 = 5800; %5800GPa
 v12 = 0.26; 
 
-Q11 = E1/(1-v12.^2*E2/E1);
-%%Q22 = E2/(1-v12.^2*E2/E1);
-Q22 = Q11.*(E2/E1);
-Q12 = v12.*Q22;
+Q11 = E1/(1-v12^2*E2/E1);
+Q22 = Q11*(E2/E1);
+Q12 = v12*Q22;
 Q21 = Q12;
 Q66 = G12;
 
@@ -35,18 +34,6 @@ Q_loc = [Q11 Q12 0;
 
 % Task 2: Compute global stiffness matrices
 alpha = 0;
-
-% for i = 1: n_plies
-%     alpha = plies(i).phi;
-% 
-%     plies.Teps(i) = [cos(alpha).^2 sin(alpha).^2 sin(alpha)*cos(alpha);
-%         sin(alpha).^2 cos(alpha).^2 -sin(alpha)*cos(alpha);
-%         -2*sin(alpha)*cos(alpha) 2*sin(alpha)*cos(alpha) cos(alpha).^2 - sin(alpha).^2];
-% 
-% 
-%     plies.Q(i) = T.' .*Q_loc.*T;
-% end
-
 
 for i = 1: n_plies
     plies(i).Teps = strainTransformationMatrix(plies(i).phi);
@@ -65,7 +52,7 @@ z_mean = (zk+zk1)/2;
 % z_mean = (z(1:end-1) + z(2:end)) / 2;
 
 %%z+1 = [-2.*plies(i).t;-plies(i).t;plies(i).t];
-A = A + plies(i).Q*plies(i).t;
+A = A + plies(i).Q * plies(i).t;
 B = B + plies(i).Q.*plies(i).t.*z_mean(i);
 D = D + plies(i).Q.*plies(i).t*(plies(i).t^2/12+z_mean(i).^2);
     % A = A + plies(i).Q * (z(i+1) - z(i));
@@ -75,18 +62,25 @@ end
 ABD = [A B; B D];
 
 % Task 4: Solve the system
-sol = ABD'*Load;
-for i = 1: n_plies
-    plies(i).eps(1) = sol(i);
-    plies(i).eps(2) = sol(i);
-end
-% Task 5: Determine strains in global coordinates
-eps = [];
+sol = inv(ABD)*Load;
 
+% Task 5: Determine strains in global coordinates
+%%eps = [];
+
+e0 = sol(1:3);
+kappa = sol(4:6);
+for i = 1: n_plies
+    zk= plies(i).t/2.*[-3;-1;1;3];
+    
+    %%down
+    plies(i).eps(:,1) = e0 + kappa * zk(i);
+    %%upper
+    plies(i).eps(:,2) = e0 + kappa * zk(i+1);
+end
 % Task 6: Compute local strains
 for i = 1: n_plies
-    plies(i).eps(i,1) = e0 + z(i)   * kappa;
-    plies(i).eps(i,2) = e0 + z(i+1) * kappa;
+    plies(i).eps(:,1) = plies(i).Teps * plies(i).eps(:,1);
+    plies(i).eps(:,2) = plies(i).Teps * plies(i).eps(:,2);
 end
 % Function for transformation matrix
 function Teps = strainTransformationMatrix(phi)
@@ -97,10 +91,12 @@ function Teps = strainTransformationMatrix(phi)
     %   Teps (3x3 matrix)   Transformation matrix for strain from global to local strains
     Teps = zeros(3,3);
     %%Teps = fetchData(3,3);
-    Teps = [cos(phi).^2 sin(phi).^2 sin(phi)*cos(phi);
-            sin(phi).^2 cos(phi).^2 -sin(phi)*cos(phi);
-            -2*sin(phi)*cos(phi) 2*sin(phi)*cos(phi) cos(phi).^2 - sin(phi).^2];
-
+    % Teps = [cos(phi).^2 sin(phi).^2 sin(phi)*cos(phi);
+    %         sin(phi).^2 cos(phi).^2 -sin(phi)*cos(phi);
+    %         -2*sin(phi)*cos(phi) 2*sin(phi)*cos(phi) cos(phi).^2 - sin(phi).^2];
+     Teps = [cosd(phi)^2 sind(phi)^2 sind(phi)*cosd(phi);
+            sind(phi)^2 cosd(phi)^2 -sind(phi)*cosd(phi);
+            -2*sind(phi)*cosd(phi) 2*sind(phi)*cosd(phi) cosd(phi).^2 - sind(phi).^2];
     
 end
  
