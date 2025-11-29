@@ -65,13 +65,12 @@ ABD = [A B; B D];
 sol = inv(ABD)*Load;
 
 % Task 5: Determine strains in global coordinates
-%%eps = [];
-
+eps = zeros(3,4);
 e0 = sol(1:3);
 kappa = sol(4:6);
 for i = 1: n_plies
     zk= plies(i).t/2.*[-3;-1;1;3];
-    
+    eps = e0 + kappa * zk';
     %%down
     plies(i).eps(:,1) = e0 + kappa * zk(i);
     %%upper
