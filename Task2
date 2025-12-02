@@ -1,0 +1,74 @@
+% Load model and result from previous exercise
+load('laminate_data.mat');
+[plies.sigG]         = deal([]);     % global stress
+[plies.sigL]         = deal([]);     % local stress
+[plies.maxStressFI]  = deal([]);     % failure index for max stress criterion
+[plies.hashinFI]     = deal([]);     % failure index for Hashin criterion
+[plies.tsaiWuFI]     = deal([]);     % failure index for Tsai-Wu criterion
+[plies.maxStressRF]  = deal([]);     % reserve factor for max stress criterion
+[plies.tsaiWuRF]     = deal([]);     % reserve factor for Tsai-Wu criterion
+
+% Your solution
+%% Task1 Compute Stress in global and local coordinates 
+for i = 1: n_plies  
+  plies(i).sigG = plies(i).Q * plies(i).eps;
+  plies(i).sigL = plies(i).Teps * plies(i).sigG;
+end
+
+%% Task2 Set up plots                                    
+for i = 1: n_plies
+  x1 = plies(i).sigG;
+  x2 = plies(i).sigL;
+  %y  = plies(i).t/2*[-3;-1;1];
+  y  = linspace(-plies(i).t/2,plies(i).t/2);
+end
+figure
+plot(x1,y,x2,y)
+
+%% Task3                                                 
+% Functions for failure indices
+function [FI] = maxStress(sig, Xt, Xc, Yt, Yc, S)
+    % Compute the 2D failure index for the maximum stress criterion
+    % INPUT
+    %   sig (3 x 1 vector)      Local stress for ply
+    %   Xt  (scalar)            Tensile strength in fiber direction
+    %   Xc  (scalar)            Compressive strength in fiber direction
+    %   Yt  (scalar)            Tensile strength perpendicular to fiber
+    %   Yc  (scalar)            Compressive strength perpendicular to fiber
+    %   S   (scalar)            Shear strength
+    % OUTPUT
+    %   FI (scalar)             Failure index
+    FI = max
+    FI = 0;
+end
+
+function [FI] = hashin(sig, Xt, Xc, Yt, Yc, S)
+    % Compute the 2D failure index for the Hashin criterion
+    % INPUT
+    %   sig (3 x 1 vector)      Local stress for ply
+    %   Xt  (scalar)            Tensile strength in fiber direction
+    %   Xc  (scalar)            Compressive strength in fiber direction
+    %   Yt  (scalar)            Tensile strength perpendicular to fiber
+    %   Yc  (scalar)            Compressive strength perpendicular to fiber
+    %   S   (scalar)            Shear strength
+    % OUTPUT
+    %   FI (scalar)             Failure index
+
+    FI = 0;
+end
+
+function [FI] = tsaiWu(sig, Xt, Xc, Yt, Yc, S)
+    % Compute the 2D failure index for the Tsai-Wu criterion
+    % INPUT
+    %   sig (3 x 1 vector)      Local stress for ply
+    %   Xt  (scalar)            Tensile strength in fiber direction
+    %   Xc  (scalar)            Compressive strength in fiber direction
+    %   Yt  (scalar)            Tensile strength perpendicular to fiber
+    %   Yc  (scalar)            Compressive strength perpendicular to fiber
+    %   S   (scalar)            Shear strength
+    % OUTPUT
+    %   FI (scalar)             Failure index
+    
+    FI = 0;
+end
+ 
